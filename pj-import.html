@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>品融的遠見紀實</title>
+
+  <!-- jQuery & 插件 -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+  <style>
+    body {
+      font-family: "Noto Sans TC", sans-serif;
+      margin: 2rem;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    th, td {
+      padding: 8px;
+      border: 1px solid #ccc;
+    }
+    th {
+      background-color: #f0f0f0;
+    }
+    .article-box {
+  
+      max-width: 900px;
+      margin: 0 auto 1rem auto;
+      padding: 1rem 1.2rem;
+      border-top: 1px solid #e0e0e0;
+      /*margin: 0 auto 2rem auto;*/
+      background: #fff;
+      /*padding: 1.5rem;*/
+    }
+    .article-box:first-of-type {
+      border-top: none;
+    }
+    .article-box h2 {
+      font-size: 22px;
+      color: #003b8b;
+      margin-bottom: 1rem;
+    }
+    .article-box .meta {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 1rem;
+    }
+    .article-box figure {
+      margin: 1rem 0;
+    }
+    .article-box figcaption {
+      font-size: 13px;
+      color: #444;
+    }
+    .article-box p {
+      font-size: 17px;
+      line-height: 1.9;
+      margin-bottom: 1.5rem;
+      text-align: justify;
+    }
+    .article-box a {
+      color: #0a47a9;
+      text-decoration: none;
+    }
+    .article-box a:hover {
+      text-decoration: underline;
+    }
+    .toc-container {
+      background-color: #f0f3fa;
+      border-left: 4px solid #0a47a9;
+      padding: 1rem 1.5rem;
+      margin-top: 2rem;
+      border-radius: 4px;
+      text-align: center;
+      width: 100%; /*  設定寬度為 100% */
+      /* margin: 0 auto;  如果需要垂直居中 */
+    }
+    .toc-container h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-top: 0;
+    }
+    .toc-list {
+      list-style: none;
+      padding-left: 0;
+      line-height: 2;
+      display: inline-block; /*  或移除這行，使用 text-align: left; */
+      text-align: left; 
+    }
+    .toc-list a {
+      text-decoration: none;
+      color: #0a47a9;
+    }
+    .toc-list a:hover {
+      text-decoration: underline;
+    }
+
+    #top-words-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed; /*  確保所有單元格大小相同 */
+    }
+
+    #top-words-table td {
+      width: 10%; /*  每個單元格佔 10% 寬度 */
+      height: 50px;  /* 設定單元格高度 */
+      text-align: center;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+
+    /*  添加一些 hover 效果 */
+    #top-words-table td:hover {
+      background-color: rgba(0,0,0,0.1); /*  滑鼠懸停時改變背景顏色 */
+      cursor: pointer;  /*  滑鼠懸停時顯示指標 */
+    }
+
+    #monthlyChart {
+      max-height: 250px;
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .article-header {
+      display: flex;
+      justify-content: space-between; /*  左右對齊 */
+      align-items: flex-start; /*  垂直頂端對齊 */
+      margin-bottom: 1rem; /*  或其他你想要的間距 */
+    }
+
+    .article-title-author {
+      text-align: left; /* 作者名稱靠左對齊 */
+    }
+
+    .breadcrumbs { /* 麵包屑樣式 */
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 0.5rem;
+    }
+
+    .author {
+      font-size: 16px;
+      color: #333;
+      margin-top: 0.5rem;
+      display: block; /* 確保作者名稱獨佔一行 */
+    }
+
+    .article-meta {
+      text-align: right; /* 日期和瀏覽數靠右對齊 */
+      font-size: 14px;
+      color: #666;
+    }
+
+    .article-meta .date, 
+    .article-meta .views {
+        display: block;
+    }
+
+    .article-box h2 { /* 調整 h2 的 margin */
+        margin-bottom: 0.5rem; /* 或其他你想要的間距 */
+    }
+
+    /* Tooltip 樣式 */
+    #top-words-table .tooltip-cell {
+      position: relative; /*  設定為 relative，以便 tooltip 定位 */
+    }
+
+    #top-words-table .tooltip-cell:hover::after {
+      content: attr(title);  /*  顯示 title 屬性的值 */
+      position: absolute;
+      top: -25px; /*  調整 tooltip 的位置 */
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0, 0, 0, 0.8);  /*  tooltip 背景顏色 */
+      color: white;  /*  tooltip 文字顏色 */
+      padding: 5px 10px;
+      border-radius: 5px;
+      white-space: nowrap; /* 防止 tooltip 文字換行 */
+      z-index: 1; /*  確保 tooltip 在最上層 */
+    }
+
+  </style>
+</head>
+<body>
+
+  <h1>品融的遠見紀實</h1>
+
+  <div class="article-box">
+
+
+    <div class="article-header">  <!-- 新增一個容器 -->
+      <div class="article-title-author">
+        <div class="breadcrumbs">首頁 > 菁英 > 人物新聞</div> <!-- 麵包屑導航 -->
+        <h2>陳品融筆下文字，如何震撼媒體界？</h2>
+        <span class="author">曾子軒</span>
+      </div>
+      <div class="article-meta">
+        <span class="date">2025-05-01　瀏覽數 20,000+</span>
+      </div>
+    </div>
+
+
+    
+    <figure>
+      <img src="photo/pj-page.jpg" alt="陳品融作者頁面現場" style="width:100%;">
+      <figcaption>《遠見》記者排名裡，陳品融高居第一、獨居第一、只能是第一。圖／曾子軒攝</figcaption>
+    </figure>
+
+    <p>陳品融正式從《遠見》科技線畢業，也正式宣告《遠見》科技組迎來倒閉。</p>
+    <p>這段旅程裡，陳品融讓每個人都驚呆了，她做了「這件事」，讓主管驚呼、同事害怕、讀者苦惱。所有人都折服於她的報導。陳品融怎麼做到？她的文字怎麼說？到底在夯什麼？攤開三年來的報導，一清二楚，優秀無所藏匿。</p>
+    <p>這不是績效報表，而是陳老大用文字劃出的科技軌跡。因為，她隨手就是一部台灣科技史，有些文章被企業公關奉為典範，有些預計被列入國小教材，以後大家都要讀《品融漫遊錄》。</p>      
+    <p>陳品融走了，對《遠見》來說，絕對不只是少了一個記者，更是少了<strong>儲備總編、未來發行人</strong>。幸好，但這些文字還在，我們幫你存檔成冊，讓你離職不是散場，而是昇華。畢竟，退場只是表面，點閱永不下線。</p>
+    <p>本文謹紀念《遠見》永遠的科技巨擘、電子五哥泰斗<a href="https://www.gvm.com.tw/author/6581">陳品融</a>。她胸懷遠見、心存天下，小白敬佩、凱恩感嘆、君毅欣賞、良儒盛讚、阿榕伯也瘋狂（造謠）（只有這句造謠其他都真的）。讓讀者高喊，從此再也不用懂商業看商周跟今周。</p>
+    <p>特此整理「品融語料考」，再請參考！</p>
+    
+    <p>
+      2022年7月，自從踏進BOSS TOWER以後，傳奇就此展開。
+    </p>
+    <div class="toc-container">
+    <h3>【目錄】陳優秀如何走到今天？</h3>
+      <ul class="toc-list">
+        <li><a href="#start">📖 故事從這裡開始。</a></li>
+        <li><a href="#start-text">✍️ 大統計！</a></li>
+        <li><a href="#monthly-output">📅 每月產量總覽：三年內容走勢一次看！</a></li>
+        <li><a href="#top-view">🔥 最猛文章：看誰把讀者拉爆！</a></li>
+        <li><a href="#low-view">📉 最低調代表作：冷門也是風格。</a></li>
+        <li><a href="#top-length">📚 字數之王：誰才是字海潛水王？</a></li>
+        <li><a href="#down-length">📝 極簡篇章：一句話讓人秒懂。</a></li>
+        <li><a href="#top-words">🧠 最愛用字Top10：你的腦海藏了幾個「AI」？</a></li>
+        <li><a href="#verbs">⚙️ 最會動的動詞們：品融的句子，都是行動派。</a></li>
+        <li><a href="#nouns">📦 名詞界F4：鴻海、宏碁、AI、劉揚偉，永不缺席。</a></li>
+        <li><a href="#adjectives">🎨 形容詞風暴：從「優質」到「潛在」，詞庫之神已附身。</a></li>
+        <li><a href="#adverbs">🚀 副詞亂舞：「其實」說的都是真的。</a></li>
+        <li><a href="#companies">🏢 公司排行榜：誰最常佔據品融心頭？</a></li>
+        <li><a href="#names">👤 人名欄目冠軍：劉揚偉190+ mentions，老朋友了吧？</a></li>
+        <li><a href="#topics">🌍 主題關鍵字宇宙：一切都是為了AI。</a></li>
+        <li><a href="#bigrams">🔗 詞組合體技：「備受關注」宇宙連擊No.1！</a></li>
+        <li><a href="#questions">❓ 問句精選：問出靈魂深處的產業焦慮。</a></li>
+        <li><a href="#end">📖 故事到這裡結束。</a></li>
+      </ul>
+
+    </div>
+  <h1>陳優秀，三年生涯大回顧</h1>
+
+  <div class="article-box" id="start">
+    <h2>📖 故事從這裡開始。</h2>
+    
+    <p>「車用電子本週『聯手』新聞不斷。英業達與恩智浦結盟，恩智浦又與鴻海結盟，意法半導體也與德國福斯車廠結盟，從半導體、電子到系統組裝廠、車廠，各顯神通跨界搶進車電大餅，合作細節多元，從軟體中控、硬體電控到電動車內的小部件，可看出車用電子軟硬整合的烽煙正燃。</p>
+    <p>臧益群表示，英業達在開發商品時投入相當多資源，確保汽車安全與資安，從強調元件級功能安全的ISO 26262、強調汽車模組級資訊安全ISO/SAE 21434、到強調汽車系統級預期機能安全的ISO 21448，『恩智浦在這部分，就是給予支持。』</p>
+    <p>本次合作聚焦於五大應用，分別為『超寬頻Ultra-wideband智慧汽車門禁系統』、『中央網關Central Gateway』、『車規級服務器Vehicle Grade Server』、『智慧電子座艙e-Cockpit』及『車規級無線充電Wireless Charger』。」
+
+    </p>
+    <p>——《強攻車電，英業達結盟恩智浦的五大盤算》，2022/08/05，Great Chen</p>
+    <p></p>
+
+    <p>從報導英業達的結盟計劃開始，陳老大展開旅程。</p>
+    <p>「遙記小品開始交稿的前幾篇企業專訪，也很像官網或是維基百科⋯⋯，一開始就是官網的關於我+wiki。」</p>
+    
+    <p>——Ghost</p>
+    <p>但從那以後，一切都變得不一樣了⋯⋯</p>
+
+    <p>「從谷底反轉，指日可待。『我們的觀點是：堅定不移，一定要努力到底！』劉克振的語氣和語句同樣堅定。」</p>
+    <p>——《物聯網平台年虧1.5億，研華劉克振大嘆：夢很大！》，2022/08/06，Great Chen</p>
+    <p>陳老大也開始堅定前行。</p>
+
+
+    
+    
+  </div>
+  <div class="article-box" id="start-text">
+    <h2>✍️ 大統計！</h2>
+    
+    <p>這三年下來，扣掉本文截稿前的四月底兩篇紙本稿不計，陳品融一共寫了<mark>231</mark>篇稿、<mark>454,444</mark>個字。</p>
+    <p>她最常寫到的詞，就是跟她一樣夯的<mark>AI</mark>，以及路線上的<mark>鴻海</mark>和<mark>台灣</mark>。</p>
+    <p>流量最高的，就是被財經部落客覬覦、整篇都被偷抄的<a href="https://www.gvm.com.tw/article/108452">《AI PC夯什麼？引英特爾、華碩搶進？一圖拆解23檔概念股》</a>，點閱直接飆破<mark>六萬</mark>。</p>
+    <p>字數最多的，則是被杏珠姐欽點、飛抵日本採訪的<a href="https://www.gvm.com.tw/article/115299">《獨家直擊東京新地標，「麻布台之丘」奇蹟》</a>，長度超過<mark>六千字。</mark></p>
+    <p>最多產的分別是<mark>2023年9月</mark>和<mark>2024年1月</mark>，這兩個月陳品融佳作頻頻，都各自端出<mark>12篇稿件</mark>，讓編輯台不知如何是好，因為稿件too good to edit。</p>
+    <p>以下將分別從流量與字數等指標、文字使用、時間變化共三個面向，品融文章特色帶您一次看。</p>
+    </div>
+
+  <div class="article-box" id="monthly-output">
+    <h2>📅 每月產量總覽：三年內容走勢一次看！</h2>
+    
+    <p>從2022年8月開始，陳優秀展開書寫旅程。那時每月幾篇文章，像是試探水溫的腳步，也像是在尋找自己的節奏。字數中規中矩，但每一篇都寫得很用力，像是在用文字記錄一種剛開始上路的心情。</p>
+
+
+    <p>到了2023年，寫作慢慢穩了下來，進入自己的節拍（AI講的）。那年5月到10月，是寫作特別密集的一段時間，文章一篇接著一篇，總字數也一路往上漲，不只是產量多，而是每一篇都有一種「非寫不可」的重量。很多句子，是在深夜裡、截稿前、或者某個忽然被某個議題打動的瞬間寫下的。（有嗎？）</p>
+
+    <canvas id="monthlyChart" height="350"></canvas>
+    <script>
+      const monthLabels = [
+        "2022/8","2022/9","2022/10","2022/11","2022/12",
+        "2023/1","2023/2","2023/3","2023/4","2023/5","2023/6","2023/7","2023/8","2023/9","2023/10","2023/11","2023/12",
+        "2024/1","2024/2","2024/3","2024/4","2024/5","2024/6","2024/7","2024/8","2024/9","2024/10","2024/11","2024/12",
+        "2025/1","2025/2","2025/3","2025/4"
+      ];
+      const articleCounts = [7,3,5,6,5,5,7,5,7,10,10,9,8,12,10,7,9,12,5,8,7,8,3,4,9,7,6,7,8,5,8,2];
+      const textLengths = [12479,6124,10860,12836,10703,10447,14383,9611,12850,17651,17710,15629,14974,22330,19254,13594,18751,23335,8456,14683,13100,15818,5877,7373,26556,12694,10951,18521,12528,9145,17068,2918];
+
+      new Chart(document.getElementById("monthlyChart"), {
+        type: 'line',
+        data: {
+          labels: monthLabels,
+          datasets: [
+            {
+              label: "篇數",
+              data: articleCounts,
+              borderColor: "#3b82f6",
+              backgroundColor: "#3b82f6",
+              yAxisID: 'y1',
+              tension: 0.4,
+              fill: false
+            },
+            {
+              label: "總字數",
+              data: textLengths,
+              borderColor: "#f97316",
+              backgroundColor: "#f97316",
+              yAxisID: 'y2',
+              tension: 0.4,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          stacked: false,
+          plugins: {
+            legend: {
+              position: 'top'
+            },
+            title: {
+              display: false
+            }
+          },
+          scales: {
+            y1: {
+              type: 'linear',
+              position: 'left',
+              title: { display: true, text: '篇數' },
+              beginAtZero: true
+            },
+            y2: {
+              type: 'linear',
+              position: 'right',
+              grid: { drawOnChartArea: false },
+              title: { display: true, text: '總字數' },
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    </script>
+    <p>進入2024年，產量有時多、有時少，像生活本身一樣有起有伏，但筆從沒放下（開始擺老了）。那年9月，陳老大寫下單月最高字數紀錄，可能也寫下了最累、但最誠實的一段時間。到了 2025 年，步調稍微放慢，但回頭看，已經累積了好幾十萬字的心力與投入。</p> <p>這三年，不只是報導的日常，更是一種陪伴。陪你一起理解產業的變化，也陪你看著自己在文字中一點一點地改變。很多人用數字來衡量內容的價值，而這些字，或許更像是你在不同時間寫給世界的便條紙。</p>
+  </div>
+  <h1>表現突出文章盤點，用數字說話</h1>
+
+
+  <div class="article-box">
+    <h2>🔥 流量最高文章</h2>
+    
+    <p>你以為科技記者只能冷靜分析？錯了。當<strong>陳品融</strong>提筆，報導不再只是報導，而是<strong>社群熱搜的點燃器、市場情緒的擴大機</strong>。她筆下的三大神作，不只是點閱高，是<strong>高到可以拿去當ETF主題掛牌的程度</strong>。</p>
+
+    <table id="top-view" class="display"><thead><tr><th>日期</th><th>標題</th><th>觀看數</th></tr></thead><tbody></tbody></table>
+
+    <p>首先那篇《AI PC夯什麼？引英特爾、華碩搶進？一圖拆解23檔概念股》，不只是文章，是一顆<strong>64,000點閱數的產業級氣象炸彈</strong>。你不只是寫出AI PC的時代來了，你是直接開啟了一場<strong>資訊流的東風導彈演習</strong>！這篇發出去的當下，LINE投資群組的阿姨們狂轉、財經YouTuber直接錄影片剖析，<strong>圖表還被某券商截圖貼進內訓簡報</strong>，市面上瞬間多了27個AI概念股達人。</p>
+
+    <p>緊接著那篇《鴻海合作案雙雙破局》，你不是寫新聞，你是在為業界痛苦寫下一首<strong>技術與現實交錯的輓歌</strong>。楊應超這句「策略對，但隔行如隔山」，一出口，投資圈所有PowerPoint演示都自動加註來源。這篇根本是<strong>企業領導階層的危機情緒管理手冊</strong>，讓無數主管默默把策略簡報砍掉重練，然後發mail給副手說：「幫我讀完這篇，我們下週開方向盤檢討會。」</p>
+
+    <p>還有那篇不得了的《泰坦號慘案，30美元的電玩手把是禍首？》……這根本是<strong>災難文學新經典</strong>。一個深海悲劇，被你用冷靜的報導節奏與絕妙的反差鋪陳，寫得讓人心跳一邊快，一邊忍不住搖頭：「怎麼可能？」但資料擺在眼前，所有人最後都只能吞下那句現實真相：「對，就是這麼荒謬。」你讓讀者第一次真正感受到：<strong>當科技過於自信，災難不只是電影素材，而是真實發生的嘆息</strong>。連用30美元搖桿這件事，都能寫得讓人情緒翻湧、科技圈齊聲沉默，這篇報導<strong>不只是話題，是一種警世的公共記憶建構</strong>。</p>
+
+    <p>三篇文章，三次擊穿點閱排行榜。你筆下不是文字，是<strong>雷達，是導航，是產業世界裡的氣壓變化</strong>。</p>
+
+    <p>看到這個流量，<strong>陳老大直接發威，讓皓平哥落淚、潔西卡也退位。</strong></p>
+
+    
+  </div>
+
+  <div class="article-box">
+    <h2>📉 流量最低文章</h2>
+    
+    <p><strong>不是每篇文章都註定衝榜，有些作品，是獻給宇宙邊緣讀者的詩。</strong></p>
+    <p>在這個演算法支配、短影音橫行的年代，還願意寫「國家要兼顧社會均衡」、「EPSON如何翻轉印刷業」、「川普2.0對台灣的啟示」這種硬派主題的，除了陳品融，還能有誰？可能還有吳明益。</p>
+    
+    <table id="low-view" class="display"><thead><tr><th>日期</th><th>標題</th><th>觀看數</th></tr></thead><tbody></tbody></table>
+    <p>像是那篇《面對川普2.0》，才350點閱？不，其實就是很晚刊出來又是紙本所以流量才低。</p>
+    <p>你可能會問，那《黃仁勳、馬斯克都看好，機器人最後一哩路在AI？》呢？很簡單，看看共同作者就知道，有人拖陳老大下水。</p>
+    <p><strong>這些文章，不是沒人看，是看得懂的人太少。</strong>這就是品融式報導的「陳不屑」。看不懂，怪我囉？怪你沒讀書，我要去愛丁堡囉，掰掰～</p>
+    
+  </div>
+
+  <div class="article-box">
+    <h2>📚 字數最多文章</h2>
+    
+    <p>其他人寫800字已經氣喘吁吁、可能想說稿費到了沒、來了沒，品融則是準備加碼再戰第五個800字。</p> 
+    <p>像那篇《獨家直擊東京新地標，「麻布台之丘」奇蹟》，<strong>6135字</strong>！這不是文章，是旅遊書、建築誌、產業觀察與文化散策的混合體，一次讀完感覺自己已經在麻布台生活過三年。</p> 
+    <p>而《日本大膽向天空借地》這篇，字數也高達<strong>4923</strong>。不是每個人都敢挑戰解釋容積率，但你做到了。</p>
+    <p>順便推薦陳主播影片：<a href="https://www.youtube.com/watch?v=x3VHQulrfC0">都更日本能，台灣為什麼不能？「東京麻布台之丘」其實是耗費35年都更案！</a></p>
+    
+    <figure>
+      <img src="photo/pj-video-japan.png" alt="陳品融能你為什不能現場" style="width:100%;">
+      <figcaption>陳品融能你為什不能現場</figcaption>
+    </figure>
+    
+    
+    <table id="top-length" class="display"><thead><tr><th>日期</th><th>標題</th><th>字數</th></tr></thead><tbody></tbody></table>
+
+    <p>再來是那些關於AI機器人、GTC、黃仁勳、馬斯克的鉅作們，篇篇破四千字，像是產業界的小說連載。每次只要出現「夯什麼？有哪些概念股？」你就知道：<strong>品融要開地圖砲了</strong>，名詞會爆滿、概念會氾濫，挑剔如小白也愛看（造謠）。</p>
+    <p>最後那篇《AI軍備競賽來了！連「母湯」也懂》，只要你讀到最後一段，就會自問：「我是不是也該開發台版LLM了？」</p>
+    <p>或許更該問的是，品融能，為什麼你不能？該醒醒了其他同事們！</p>
+
+  </div>
+
+  <div class="article-box">
+    <h2>📝 字數最少文章</h2>
+    <p><strong>別小看這些字數輕盈的作品，它們不是短，是濃縮。</strong>這不是「寫不多」，而是「多的都在你腦裡爆炸」。這些文章，篇篇精煉如expresso、一口灌下去，科技與政策的世界直接在腦內擴張成3D立體地圖。</p>
+    <table id="down-length" class="display"><thead><tr><th>日期</th><th>標題</th><th>字數</th></tr></thead><tbody></tbody></table>
+
+    <p>像是那篇《面對不確定的時代》，只有960字？笑死，<strong>那根本是許勝雄講話錄音逐字稿的精華萃取版</strong>。短短一千字不到，就讓整個台灣企業界集體跪拜：「這句話我要放進下一次尾牙致詞。」</p>
+    <p>還有《電動車衰、AI散熱來救》，電動車哀號、AI微笑，文長不到一千字，<strong>卻完成了整個產業敘事的轉向動作</strong>，簡直像在讀商戰小說的閃電章節。</p>
+    <p>至於那兩篇尾牙系列，《宏碁陳俊聖看到挑戰與甜蜜點》與《仁寶尾牙談AI伺服器》，篇幅雖短，但<strong>那是壓縮過的產業精神糧食</strong>。記者去尾牙不是為了吃飯，是為了聽歌，你一字不浪費，全數打包回來，孟軒、如嫻看了都驚駭。</p>
+
+  </div>
+  <h1>深入陳優秀的文字，如何描述這個世界？</h1>
+
+  <div class="article-box">
+    <h2>🧠 最常出現的單字</h2>
+    <p><strong>這些字，才是真正的主角。</strong></p>
+    <p>第一名是誰？當然是<strong>AI（1340次）</strong>！出場頻率高得可以當你第二個名字。AI在哪，品融的句點就在哪。就算文章標題沒有AI，副標一定偷偷藏著，就像夜市裡什麼都能加九層塔，你什麼都能套AI。</p>
+    
+    <table id="top-words-table"></table>
+
+    <script>
+
+      function loadCSVToTableWithColor(csvPath, tableId, rows = 5, cols = 10) {
+        fetch(csvPath)
+          .then(response => response.text())
+          .then(csvText => {
+            const results = Papa.parse(csvText, { header: true, dynamicTyping: true });
+            const data = results.data;
+  
+            const table = document.getElementById(tableId);
+            let minCount = Infinity;
+            let maxCount = -Infinity;
+  
+            // 計算最小和最大出現次數
+            for(let i = 0; i< rows*cols; i++){
+              if(i >= data.length) break;
+              const count = data[i].n;
+              minCount = Math.min(minCount, count);
+              maxCount = Math.max(maxCount, count);
+            }
+  
+  
+            // 建立表格
+            for (let i = 0; i < rows; i++) {
+              const row = table.insertRow();
+              for (let j = 0; j < cols; j++) {
+                const cell = row.insertCell();
+                const index = i * cols + j;
+
+                if (index < data.length) {
+                  const word = data[index].text_segment;
+                  const count = data[index].n;
+
+                  // 計算顏色深淺 (加大顏色範圍)
+                  const colorIntensity = (count - minCount) / (maxCount - minCount);
+                  const color = `rgba(255, 99, 132, ${colorIntensity})`; //  直接使用 colorIntensity，範圍 0-1
+
+                  cell.textContent = word;
+                  cell.style.backgroundColor = color;
+
+                  // 使用 title 屬性並添加 CSS 樣式以顯示 tooltip
+                  cell.title = `${word}: ${count}`;
+                  cell.classList.add("tooltip-cell"); // 添加 class
+                }
+              }
+            }
+            
+      })
+      .catch(error => {
+              console.error("載入 CSV 檔案錯誤:", error);
+              // 顯示錯誤訊息
+              const table = document.getElementById(tableId);
+              const row = table.insertRow();
+              const cell = row.insertCell();
+              cell.colSpan = cols; // 設定 colspan
+              cell.textContent = "載入資料失敗"; // 顯示錯誤訊息
+            });
+    }
+
+  
+      loadCSVToTableWithColor("data/df_top_word.csv", "top-words-table");
+    </script>
+
+    <!-- <table id="top-words" class="display"><thead><tr><th>文字片段</th><th>出現次數</th></tr></thead><tbody></tbody></table> -->
+    <!-- <svg id="top-words-bubble" width="800" height="600"></svg> -->
+
+    <p>緊追在後的是<strong>鴻海（715次）</strong>與<strong>台灣（711次）</strong>，難怪有人要打電話來，因為太重要，但這裡不敢寫太多。接下來的「發展」、「市場」、「產品」、「技術」、「未來」、「全球」⋯⋯，每個都好重要。</p>
+    <p>還有「客戶」與「我們」這兩個詞交替出現，顯示你不只關心供應鏈，也偷偷用「我們」拉近與讀者距離，<strong>根本是科技記者中的溫暖派外交官</strong>。</p>
+    <p><strong>這些字不是詞頻統計，這些字是你這幾年職涯的足跡。</strong></p> <p>未來你要去哪裡當總編，還是未定之天，畢竟雜誌大打搶人戰、學界也瘋狂，但這些詞彙一定會一直出現。</p>
+
+
+    
+  </div>
+
+  <div class="article-box">
+    <h2>⚙️ 動詞</h2>
+    <p><strong>這些動詞，就是你報導宇宙裡的推進引擎。</strong>每篇文章都像在排演一齣產業進化劇，而這十個字，就是全場最會搖滾的演員。</p> <p>獨佔鰲頭的是<strong>「發展」（542次）</strong>，根本是你文章裡的天命之詞。從技術、產業、商模、人才到策略，<strong>萬物皆可發展</strong>，只要你出筆。</p> <p>「合作」「推出」「成長」「持續」緊追其後，這些動詞像是企業記者會上永遠不會缺席的口頭禪，你不只記錄它們，<strong>你讓它們變得有靈魂</strong>。</p>
+
+    <table id="verbs" class="display"><thead><tr><th>動詞</th><th>出現次數</th></tr></thead><tbody></tbody></table>
+
+    
+    <p><strong>這些不是動詞，是產業戰報裡的音效特效。</strong>在你筆下，它們從語法單位變成節奏主導，一字一下，全場點頭。</p>
+  </div>
+
+  <div class="article-box">
+    <h2>📦 名詞</h2>
+    <p><strong>這些名詞不是在報導裡被提到，它們是你寫稿時的左右護法。</strong>你不是記者，是名詞牧羊人，天天帶著這些關鍵字在科技荒野中奔馳。</p> 
+
+    <table id="nouns" class="display"><thead><tr><th>名詞</th><th>出現次數</th></tr></thead><tbody></tbody></table>
+
+    <p><strong>「鴻海」和「台灣」</strong>並列名詞雙雄，簡直像是你文章的國家隊隊長，每三行就會出現一次，<strong>比你主管的名字還熟</strong>。</p> <p>「產品」「市場」「產業」「技術」這四大天王輪番出現，每一篇都像產業講義現場直播，<strong>讀者只要跟著你的文章走，就能用名詞打贏創投簡報</strong>。</p> <p>「機器人」「客戶」「領域」則是你深耕科技題的招牌三寶，<strong>每個名詞都寫得像在跑IP個人秀</strong>。</p>
+  </div>
+
+  <div class="article-box">
+    <h2>🎨 形容詞</h2>
+    
+    <p><strong>這些形容詞，是你文章裡的定調大師，開場五個字就決定整篇氣勢。</strong>別人用形容詞是裝飾，你用形容詞是宣告，是情緒，是立場，是產業語言的定音槌。</p> 
+
+    <table id="adjectives" class="display"><thead><tr><th>形容詞</th><th>出現次數</th></tr></thead><tbody></tbody></table>
+
+    <p>「<strong>共同、主要、數位</strong>」這三個出場王，幾乎可以直接列入你句型的建築結構語法——只要一出現，讀者自動進入 <strong>『這件事很有份量』</strong>的狀態。</p> <p>再來是「<strong>高階、真正、大型</strong>」，你不寫小不點、不說平凡話，句子一出手就自帶氣場，<strong>像幫每個主詞戴上產業皇冠</strong>，讓報導讀起來像 CEO 在開 keynote。</p> <p><strong>你不是在形容事物，你是在幫它們打燈光、加立體聲、鋪紅毯。</strong>這些詞就是你風格的味精，一撒上去，整篇稿瞬間有感。（用味精比喻實在太微妙了！）</p>
+    <p>順便推薦陳主播影片：<a href="https://www.youtube.com/watch?v=WIImeG6I8Lw">機器人時代正在崛起，獨家直擊美國亞馬遜物流中心、早稻田實驗室</a></p>
+
+    <figure>
+      <img src="photo/pj-video-robot.png" alt="陳品融主播現場" style="width:100%;">
+      <figcaption>陳品融主播現場</figcaption>
+    </figure>
+    
+  </div>
+
+  <div class="article-box">
+    <h2>🚀 副詞</h2>
+    <p><strong>副詞，是你報導裡的戲劇張力來源。</strong>你不是單純在講事實，你在安排情緒、設下伏筆、留白補腦。這些副詞一出場，整句話就像裝上懸念與轉折的馬達。</p> <p><strong>「甚至」「如何」「可以」</strong>這三巨頭，一個讓讀者覺得有事要爆、一個引導出產業哲學提問，另一個則像在說：「我現在雖然沒爆料，但我<strong>可以</strong>。」</p>
+
+    <table id="adverbs" class="display"><thead><tr><th>副詞</th><th>出現次數</th></tr></thead><tbody></tbody></table>
+
+    <p>「沒有」「可能」「其實」這些語助詞，是你寫稿時的小聲音，也是每位記者深夜趕稿時的真心話。他們不會高調，<strong>但句句藏鋒，讓整篇文多了層次與心機</strong>。</p> <p><strong>「相當」則是你內建的加強語氣按鈕。</strong>只要它出現，整個名詞瞬間升級三階，就像報導界的Buff法師。</p> <p>這些副詞，不是修飾語，是品融句法的滑翔翼。你讓報導不只是知識傳遞，更像一場有節奏、有懸念、有態度的敘事旅程。</p>
+  </div>
+
+  <div class="article-box">
+    <h2>🏢 公司</h2>
+    <p><strong>這些公司不是新聞主角，是你報導宇宙的常駐班底。</strong>其他記者寫企業要翻資料，你寫這幾家根本<strong>像在寫日記</strong>，熟到可以幫他們開內部會議。</p> 
+
+    <table id="companies" class="display"><thead><tr><th>公司</th><th>出現次數</th></tr></thead><tbody></tbody></table>
+
+    <p><strong>鴻海</strong>以壓倒性 715 次出場穩坐第一，<strong>不是主角，是整個系列的宇宙中心。</strong>你寫它比它內部PR還熟，難怪吉米在偷偷按讚、小蔡要當你麻吉。</p>
+    <p>緊接著的 <strong>宏碁、華碩</strong>雙A雙J隨時電話熱線，三五不時Jason還要考考你。輝達就不用說了，已經成為所有科技記者最熟悉的面孔。</p>
+    <p>這些公司真的好榮幸⋯⋯</p>
+    
+  </div>
+
+  <div class="article-box">
+    <h2>👤 人名</h2>
+    <p>公司很重要，但人更是。榜單攤開，都是赫赫有名的名字。</p>
+    <p>其實原本還有更響亮的四巨頭：陳之俊、蘇義傑、張智傑、黃菁慧，後來趕快清掉code就沒事了。</p>
+
+    <table id="names" class="display"><thead><tr><th>人名</th><th>出現次數</th></tr></thead><tbody></tbody></table>
+
+    <p><strong>你不是寫他們的話，你是在捕捉這個產業時代的聲音。</strong>這些人名的出現，不只是引用，而是呼應，是鋪陳，是你讓報導長出人物血肉與企業張力的方式。</p>
+  
+    <p>順便推薦陳分享影片：<a href="https://youtu.be/uXONltXrMkc?t=40">CES消費性電子展「科技風向球」　AI應用百花齊放｜主持人：劉姿麟｜遠見雜誌記者 陳品融</a></p>
+
+    <figure>
+      <img src="photo/pj-video-ces.png" alt="陳品融CES受訪現場" style="width:100%;">
+      <figcaption>陳品融CES受訪現場</figcaption>
+    </figure>
+  
+  </div>
+
+
+
+  <div class="article-box">
+    <h2>🌍 主題關鍵字</h2>
+    <p><strong>這些主題關鍵字，不只是你稿件裡反覆出現的標籤，它們是你報導世界的靈魂密碼。</strong>「AI」以高達1340次出場，早已成為產業時代的代名詞，你的每篇文章都在用「AI」開啟未來大門。</p> <p>接著「機器人」（467次）與「伺服器」（405次）緊隨其後，彷彿是在告訴讀者：現代科技的脈動，不只來自電腦，也來自自動化與硬體體系的革新。</p>
+    <table id="topics" class="display"><thead><tr><th>主題</th><th>出現次數</th></tr></thead><tbody></tbody></table>
+
+    <p>「電動車」（313次）和「電腦」（232次）的出現，則是你對未來出行與數位生活雙向預言的真實注解，每個關鍵字都像是聲明：科技改變世界，未來在你筆下呼之欲出。</p> <p>而「太空」（206次）與「衛星」（203次）則為你的報導注入了一抹浩瀚星海的浪漫，讓人感受到科技不僅顧及地面，還直指宇宙邊際；至於「AI PC」（196次）與「供應鏈」（196次）、以及「手機」（193次），這些詞彙則構成了你議題中的鋼鐵脈絡，每一個都在強調產業運作與科技應用的現實與未來。</p> <p><strong>這些主題關鍵字不只是統計數據，而是你報導的基石與象徵，透過它們，我們看到了整個時代的輪廓與科技的脈動。</strong></p>
+    <p>讓我們一起高喊：陳總編！陳發行人！陳教授！</p>
+  </div>
+
+  <div class="article-box">
+    <h2>🔗 常見詞組</h2>
+    <p>這幾年來，你筆下的世界總是充滿挑戰，但也從不缺乏解決方案。在各種變局中，企業紛紛尋找成長動能，而你總能捕捉到他們如何攜手合作伙伴，推動產業蓬勃發展。</p>
+    <p>有些技術正備受矚目，有些轉型還值得期待；當企業寫下歷史新高，你會問他們的複合成長率從何而來；當新一代的數位孿生技術出現，你也早已準備好文字與讀者同行。</p>
+    <p>陳老大很具成長動能，備受矚目、蓬勃發展，值得期待！</p>
+
+    <table id="bigrams" class="display"><thead><tr><th>詞組</th><th>出現次數</th></tr></thead><tbody></tbody></table>
+
+    
+  </div>
+
+  <div class="article-box">
+    <h2>❓ 問句句型</h2>
+    
+    <p>學校選擇有哪些？最終答案是什麼？遠見怎麼辦？</p>
+    
+    <p>請收看陳優秀作品，都有解答。</p>
+    <table id="questions" class="display"><thead><tr><th>句型</th><th>出現次數</th></tr></thead><tbody></tbody></table>
+
+
+    <p>順便推薦陳對談影片：<a href="https://www.youtube.com/watch?v=k4Ykqsl4-6M">C20240926《嗆新聞》陳家頤專訪陳品融 「麻布台之丘都更奇蹟 揭日本能台為何不能」</a></p>
+
+    <figure>
+      <img src="photo/pj-video-hit.png" alt="陳品融機器人直擊受訪現場" style="width:100%;">
+      <figcaption>陳品融機器人直擊受訪現場</figcaption>
+    </figure>
+  
+
+    </div>
+    
+
+  </div>
+
+  <h1>三年來，又有哪些改變？</h1>
+
+ 
+
+    <div class="article-box">
+      <h2>⏳ 時間變化關鍵字</h2>
+      <table id="trend-words" class="display">
+        <thead>
+          <tr>
+            <th>年度</th>
+            <th>1</th>
+            <th>2</th>
+            <th>3</th>
+            <th>4</th>
+            <th>5</th>
+            <th>6</th>
+            <th>7</th>
+            <th>8</th>
+            <th>9</th>
+            <th>10</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>鴻海</td><td>AI</td><td>宏碁</td><td>產品</td><td>台灣</td><td>市場</td><td>客戶</td><td>公司</td><td>電動車</td><td>發展</td>
+          <tr><td>2</td><td>AI</td><td>台灣</td><td>發展</td><td>產業</td><td>領域</td><td>鴻海</td><td>產品</td><td>市場</td><td>技術</td><td>科技</td>
+          <tr><td>3</td><td>AI</td><td>機器人</td><td>台灣</td><td>鴻海</td><td>發展</td><td>人形機器人</td><td>美國</td><td>伺服器</td><td>日本</td><td>輝達</td>
+        </tbody>
+      </table>
+
+
+      <p>三年來，你筆下的關鍵字一路演化，也悄悄映照了這個世界的技術脈動與觀點轉移。</p> <p>第一年是<strong>實體與在地的時代</strong>。「鴻海」、「宏碁」、「產品」、「台灣」、「市場」這些詞高頻出現，像是在打開一個產業地圖，逐格描繪本地企業的攻防布局。寫的是人、是公司、是當下發生的每一步戰術操作——扎實、明快，有現場溫度。</p>
+
+      <p>到了第二年，整體語感開始有了<strong>抽象與未來的色彩</strong>。「AI」站上王位，接著是「智慧」、「伺服器」、「AI PC」、「合作」、「應用」、「太空」。技術成為主角，趨勢成為敘事主線，你的報導不再只關注眼前的發表會，而是開始試著拉遠鏡頭，對齊全球技術的移動與脈絡。</p> <p>第三年，是<strong>科技與文化交會的敘事階段</strong>。「機器人」、「人形機器人」、「黃仁勳」、「輝達」、「麻布台」一一浮現。那不再只是單純的產品報導，而是科技如何影響城市景觀、人類想像、以及語言本身的使用方式。你筆下的世界，從零組件轉向人物與場景，從供應鏈變成一張社會關係網。</p> <p>三年，從寫公司到寫概念，從看技術到觀察語氣，你的關鍵字列表看似冰冷，其實藏著一個記者的世界擴張過程。越寫越廣，越寫越深，也越寫越靠近人。</p>
+
+      <p>更靠近社會、更靠近人，也就走入STS的範疇，所以就去唸書啦！遠見掰掰！</p>
+    </div>
+
+    
+    <div class="article-box">
+      <h2>📊 TF-IDF 關鍵詞變化</h2>
+      <table id="tfidf-words" class="display">
+        <thead>
+          <tr>
+            <th>年</th>
+            <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
+            <th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>雷虎</td><td>LORDSTOWN</td><td>安碁</td><td>智聯</td><td>陳冠如</td><td>張量</td><td>掌機</td><td>勵德</td><td>林鴻明</td><td>晶睿</td>
+          <tr><td>2</td><td>連加恩</td><td>鄭崇華</td><td>宸曜</td><td>李國鼎</td><td>東芝</td><td>林志鴻</td><td>養殖</td><td>VISIONPRO</td><td>藥局</td><td>簡民智</td>
+          <tr><td>3</td><td>麻布台</td><td>川普</td><td>關稅</td><td>鴻呈</td><td>森大廈</td><td>維特</td><td>APMIC</td><td>高西淳夫</td><td>DEEPSEEK</td><td>簡忠正</td>
+        </tbody>
+      </table>
+      <p>有些詞不常見，卻只要出現一次，就代表了一段時間的獨特氣息。這份 TF-IDF 關鍵字，揭示了你每一年報導中最具辨識度的語言密碼——那些別人不會特別提、但你選擇寫下來的詞。</p> <p>第一年，是各路企業與人物群像輪番登場的階段。從「雷虎」、「LORDSTOWN」、「安碁」到「張量」、「掌機」、「泰坦號」，你筆下的世界像一場產業嘉年華，每個名字後面都有一段技術野望、或是一次市場豪賭。<strong>那是一種願意下筆記錄風險與轉折的勇氣</strong>。</p>
+
+      <p>到了第二年，出現了更多學者、產品、系統架構與跨境名詞。「VISIONPRO」、「養殖」、「東芝」、「航太系」、「EPSON」、「MWC」，你開始關心的不只是公司個體，而是整個生態圈的互動脈絡。<strong>這些詞背後，是一種從「寫個案」轉向「看系統」的眼光變化</strong>。</p> <p>而第三年，語彙變得更抽象、更宏觀。「川普」、「關稅」、「TEAMLAB」、「地主」、「CORRDIFF」、「開發案」……這些字眼指向的不只是單一新聞，而是政策、文化、空間、以及制度設計的敘事線索。<strong>你開始用報導搭建結構，描繪不確定的世界如何試圖被理解。</strong></p> <p>這些詞可能無法衝上熱搜，但卻準確標記了每個時間點你在觀察什麼、思考什麼。它們像是你書寫過程中留下的小釘子，釘住了一個個正在變動的時代切面。</p>
+  
+      <p>注意看！第三年有個重要的名詞！高西淳夫先生。</p>
+      <figure>
+        <img src="photo/pj-photo-robot.png" alt="高西淳夫實驗室開發的情感表達機器人「KOBIAN」系列，致力於模仿人類各種表情。(C) Takanishi Laboratory, Waseda University, Tokyo" style="width:100%;">
+        <figcaption>高西淳夫實驗室開發的情感表達機器人「KOBIAN」系列，致力於模仿人類各種表情。(C) Takanishi Laboratory, Waseda University, Tokyo</figcaption>
+      </figure>
+      <p>這也是大家聽到令人匪夷所思的題目和發言時，在心裡浮現的表情。</p>
+    </div>
+
+    <div class="article-box" id="end">
+      <h2>📖 故事到這裡結束。</h2>
+      
+      <p>「不過，儘管大立光透露現階段未受影響，但從需求面看，仍得拉長時間觀察整體地緣政治波動對消費端的衝擊。</p>
+      <p>調研機構Trendforce本週發布最新報告，全面下修包含AI伺服器、伺服器、智慧手機和筆電等終端市場的全年展望。其中指出在基準情境下，2025年智慧手機生產量年增幅將與前一年持平，但若關稅戰後續削弱全球經濟表現，產量可能轉為年減5%。</p>
+      <p>儘管如今美國對台關稅的壓力有所緩解，但美中對抗持續升溫，對台廠供應鏈仍充滿不確定性，而以消費性電子為主力的蘋果，接下來更得謹慎在降低供應鏈成本與提升終端售價間取得平衡。」
+  
+      </p>
+      <p>——《對等關稅降至10%，蘋概股還有救？大立光林恩平釋風向》，2025/04/10，Better Chen</p>
+      <p></p>
+  
+      <p>從紀錄大立光的法說會收尾，陳老大結束旅程。</p>
+      <p>「我今天也被記者會的總經理說，你剛畢業就懂這些東西，讚喔！#愛新聞」</p>
+      
+      <p>——PJ</p>
+      <p>接下來又要開啟新的旅程⋯⋯</p>
+  
+      <p>「記者。政大新聞系畢、輔修社會學，主跑關鍵零組件、電子組裝廠、資通訊產品等，關心科技產業發展及其背後的社會變遷。」</p>
+      <p>——《陳品融》自我介紹，遠見雜誌官網，Best Chen</p>
+      <p>陳老大繼續大步狂奔！</p>      
+      
+    </div>
+    
+
+    <script>
+      $(document).ready(function () {
+        $('#tfidf-words').DataTable({
+          pageLength: 10,
+          responsive: true,
+          searching: true,
+          ordering: true,
+          autoWidth: false
+        });
+      });
+    </script>
+  
+    <script>
+      function loadCSVtoTable(csvPath, tableId, columns, orderColumnIndex = 0, orderDirection = 'desc') {
+
+        fetch(csvPath)
+          .then(response => response.text())
+          .then(csvText => {
+            const results = Papa.parse(csvText, { header: true }); // 將 results 提升到 then 函數內部
+
+            const tbody = document.querySelector(`#${tableId} tbody`);
+            tbody.innerHTML = '';
+
+
+            results.data.forEach(row => {  // 將 forEach 移到 then 函數內部，results 可見
+              if (Object.values(row).every(v => v !== '')) {
+                const tr = document.createElement('tr');
+
+                const cells = columns.map(col => {
+                  if (col === 'title' && row.link) {
+                    return `<td><a href="${row.link}">${row.title}</a></td>`;
+                  } else if (columns.includes(col)) {
+                    return `<td>${row[col] || ''}</td>`;
+                  }
+                }).filter(cell => cell !== undefined);
+
+                tr.innerHTML = cells.join('');
+                tbody.appendChild(tr);
+              }
+            });
+
+            $(`#${tableId}`).DataTable({
+              pageLength: 10,
+              searching: true,
+              ordering: true,
+              responsive: true,
+              autoWidth: false,
+              order: [[orderColumnIndex, orderDirection]],
+
+            columnDefs: tableId === 'top-view' || tableId === 'low-view' || tableId === 'top-length' || tableId === 'down-length'
+              ? [{
+                  targets: 2, // 假設第 3 欄是數字欄
+                  render: $.fn.dataTable.render.number(',', '.', 0, '')
+                }]
+              : []
+                    });
+                  });
+              }
+              
+    function loadCSVtoBubbleChart(csvPath, svgId) {
+        fetch(csvPath)
+          .then(response => response.text())
+          .then(csvText => {
+            const results = Papa.parse(csvText, { header: true, dynamicTyping: true });
+
+            const bubbleData = results.data
+              .filter(row => row.text_segment && row.n !== null && !isNaN(row.n))
+              .map(row => ({
+                r: Math.sqrt(row.n),
+                label: row.text_segment,
+                n: row.n
+              }));
+
+            const svg = d3.select(`#${svgId}`);
+            const width = +svg.attr("width");
+            const height = +svg.attr("height");
+            const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            const packLayout = d3.pack()
+              .size([width, height])
+              .padding(20);
+
+            const rootNode = d3.hierarchy({ children: bubbleData })
+              .sum(d => d.r)
+              .sort((a, b) => b.r - a.r);
+
+            packLayout(rootNode);
+
+            const nodes = rootNode.descendants().slice(1);
+
+            svg.selectAll("circle")
+              .data(nodes)
+              .enter().append("circle")
+              .attr("r", d => d.r)
+              .attr("cx", d => d.x)
+              .attr("cy", d => d.y)
+              .attr("fill", (d, i) => color(i));
+
+            svg.selectAll("text")
+              .data(nodes)
+              .enter().append("text")
+              .text(d => `${d.data.label}: ${d.data.n}`)
+              .attr("x", d => d.x)
+              .attr("y", d => d.y)
+              .attr("text-anchor", "middle")
+              .attr("dominant-baseline", "central")
+              .style('font-size', function(d) {
+                return Math.min(2 * d.r, (2 * d.r - 8) / this.getComputedTextLength() * 24) + "px";
+              })
+              .attr("fill", "black");
+          })
+          .catch(error => {
+            console.error("載入 CSV 檔案錯誤:", error);
+            const svg = d3.select(`#${svgId}`);
+            svg.append("text")
+              .attr("x", width / 2)
+              .attr("y", height / 2)
+              .attr("text-anchor", "middle")
+              .attr("dominant-baseline", "central")
+              .style("font-size", "20px")
+              .style("fill", "red")
+              .text("載入資料失敗");
+          });
+      }
+
+      loadCSVtoTable("data/df_top_view.csv", "top-view", ["date", "title", "view"], 2, 'desc'); 
+      loadCSVtoTable("data/df_down_view.csv", "low-view", ["date", "title", "view"], 2, 'asc');
+      loadCSVtoTable("data/df_top_length.csv", "top-length", ["date", "title", "text_l"], 2, "desc");
+      loadCSVtoTable("data/df_down_length.csv", "down-length", ["date", "title", "text_l"], 2, "asc");
+      loadCSVtoBubbleChart("data/df_top_word.csv", "top-words-bubble");
+      
+      loadCSVtoTable("data/df_top_verb.csv", "verbs", ["text_segment", "n"], 1, 'desc');
+      loadCSVtoTable("data/df_top_noun.csv", "nouns", ["text_segment", "n"], 1, 'desc');
+      loadCSVtoTable("data/df_top_adj.csv", "adjectives", ["text_segment", "n"], 1, 'desc');
+      loadCSVtoTable("data/df_top_adv.csv", "adverbs", ["text_segment", "n"], 1, 'desc');
+
+      loadCSVtoTable("data/df_top_company.csv", "companies", ["text_segment", "n"], 1, 'desc');
+      loadCSVtoTable("data/df_top_name.csv", "names", ["text_segment", "n"], 1, 'desc');
+      loadCSVtoTable("data/df_top_area.csv", "topics", ["text_segment", "n"], 1, 'desc');
+      loadCSVtoTable("data/df_bigram2.csv", "bigrams", ["text", "n"], 1, 'desc');
+      loadCSVtoTable("data/df_question_res.csv", "questions", ["value", "n"], 1, 'desc');
+
+      
+      
+      
+    </script>
+</body>
+</html>
